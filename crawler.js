@@ -4,8 +4,11 @@ const { JSDOM } = require('jsdom');
 async function crawlPage(baseUrl, currentUrl, pages) {
   const baseUrlObj = new URL(baseUrl);
   const currentUrlObj = new URL(currentUrl);
+
+  // check for external links
   if (baseUrlObj.hostname !== currentUrlObj.hostname)
     return pages;
+  // check for visited pages
   const normalizedCurrentUrl = normalizeURL(currentUrl)
   if (pages[normalizedCurrentUrl] > 0){
     pages[normalizedCurrentUrl]++;
@@ -17,9 +20,10 @@ async function crawlPage(baseUrl, currentUrl, pages) {
   try {
     const resp = await fetch(currentUrl);
     if (resp.status > 399) {
-      console.error('failed to fetch', currentUrl, 'with status', resp.status);
+      console.log('failed to fetch', currentUrl, 'with status', resp.status);
       return pages;
     }
+
     const contentType = resp.headers.get('content-type');
     if (!contentType.includes('text/html')) {
       console.log('non-html page', currentUrl);
@@ -27,7 +31,7 @@ async function crawlPage(baseUrl, currentUrl, pages) {
     }
 
     const htmlBody = await resp.text();
-    const nextUrls = getURLsFromHTML(htmlBody, baseUrl)
+    const nextUrls = getURLsFromHTML(htmlBody, currentUrl);
 
     for (const nextUrl of nextUrls){
       pages = crawlPage(baseUrl, nextUrl, pages)
